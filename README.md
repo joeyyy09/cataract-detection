@@ -78,8 +78,4 @@ Install the required libraries using `pip install opencv-python numpy`.
 - ES Thejas
 - P Yushmanth Pali Reddy
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
 
