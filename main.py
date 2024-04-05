@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import os
+
 
 def preprocess_image(image):
     # Convert image to grayscale
@@ -12,8 +14,8 @@ def apply_filtering(image):
     return blurred
 
 def segment_image(image):
-    # Threshold the image to separate the cataract region
-    _, threshold = cv2.threshold(image, 150, 255, cv2.THRESH_BINARY)
+    # Adaptive thresholding to separate cataract region
+    threshold = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     return threshold
 
 def detect_cataract(image):
@@ -26,11 +28,11 @@ def detect_cataract(image):
     # Segment the image
     segmented_img = segment_image(filtered_img)
 
-    # Calculate histogram
-    hist = cv2.calcHist([filtered_img], [0], None, [256], [0, 256])
-
     # Calculate mean pixel intensity
     mean_intensity = np.mean(filtered_img)
+
+    # Calculate standard deviation
+    std_deviation = np.std(filtered_img)
 
     # Decide cataract severity based on mean intensity
     if mean_intensity < 100:
@@ -42,26 +44,31 @@ def detect_cataract(image):
     else:
         severity = "Severe"
 
-    return severity, hist
+    return severity
 
-# Load the eye image
-image_path = 'processed_images/test/cataract/image_305.png'
-# image_path = 'random_image.jpg'
-eye_image = cv2.imread(image_path)
+def load_images(folder_path):
+    images = []
+    for filename in os.listdir(folder_path):
+        img = cv2.imread(os.path.join(folder_path, filename))
+        if img is not None:
+            images.append(img)
+    return images
 
-# Resize image (if needed)
-# eye_image = cv2.resize(eye_image, (desired_width, desired_height))
+# Load eye images
+normal_images = load_images('processed_images/test/normal')
+cataract_images = load_images('processed_images/test/cataract')
 
-# Detect cataract severity
-cataract_severity, hist = detect_cataract(eye_image)
+# Detect cataract severity for normal images
+print("Normal Images:")
+normal_image_paths = os.listdir('processed_images/train/normal')
+for filename, image in zip(normal_image_paths, normal_images):
+    cataract_severity = detect_cataract(image)
+    print("File:", filename, "- Cataract severity:", cataract_severity)
 
-# Display result
-print("Cataract severity:", cataract_severity)
+# Detect cataract severity for cataract images
+print("\nCataract Images:")
+cataract_image_paths = os.listdir('processed_images/train/cataract')
+for filename, image in zip(cataract_image_paths, cataract_images):
+    cataract_severity = detect_cataract(image)
+    print("File:", filename, "- Cataract severity:", cataract_severity)
 
-# Display histogram
-import matplotlib.pyplot as plt
-plt.plot(hist)
-plt.title('Histogram of Filtered Image')
-plt.xlabel('Pixel Intensity')
-plt.ylabel('Frequency')
-plt.show()
